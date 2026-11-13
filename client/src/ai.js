@@ -8,7 +8,7 @@ import { ai, settings, track } from './firebase.js';
 import { parseRules, hideNames, restoreNames } from './rules.js';
 
 const KINDS = ['sale', 'expense', 'credit', 'payment'];
-const AI_TIMEOUT_MS = 60000;
+const AI_TIMEOUT_MS = 120000; // on-device image reading on a CPU can take ~45 s
 
 const LINES_DEVICE = {
   type: 'object',
@@ -154,17 +154,44 @@ export const modeName = (m) => ({
 
 // ---------- Lines: shared cleaning + arithmetic check ----------
 
+// Small models sometimes list the page's "Total" row as a sale. A total is never a line: move it to total_written.
+const TOTAL_RE = /^\s*(grand\s+)?(total|tot[aà]l|totalman|sous[- ]total|subtotal|sum|som|suma)\b/i;
+
 function cleanLines(raw, max) {
   const list = Array.isArray(raw?.lines) ? raw.lines : [];
-  return list.slice(0, max).map((l) => ({
+  const lines = list.slice(0, max).map((l) => ({
     kind: KINDS.includes(l.kind) ? l.kind : 'sale',
-    item: String(l.item || '').trim().slice(0, 80) || 'Item',
+    // "Rice 3 cups x 250 = 750" → "Rice": the numbers already live in qty / unit_price / amount.
+    item: String(l.item || '').replace(/\s*=\s*[\d.,]+\s*$/, '')
+      .replace(/\s+\d+(?:[.,]\d+)?\s*(?:[\p{L}]+\s*)?[x×*]\s*[\d.,]+.*$/iu, '').trim().slice(0, 80) || 'Item',
     qty: num(l.qty),
     unit_price: num(l.unit_price),
     amount: num(l.amount) ?? 0,
     customer: l.customer ? String(l.customer).trim().slice(0, 60) : null,
   })).filter((l) => l.amount > 0);
+  const totals = lines.filter((l) => TOTAL_RE.test(l.item));
+  if (raw && totals.length && !num(raw.total_written)) raw.total_written = totals[totals.length - 1].amount;
+  return lines.filter((l) => !TOTAL_RE.test(l.item));
 }
+/**
+ * If the sales alone don't match the page total but every sale+cost line together does, the small model
+ * mislabelled some lines: count them as sales (the page total is what the vendor wrote). Returns a note for the trace.
+ */
+function reconcileKinds(lines, totalWritten) {
+  const t = num(totalWritten);
+  if (!t) return '';
+  const money = lines.filter((l) => l.kind === 'sale' || l.kind === 'expense');
+  const sales = money.filter((l) => l.kind === 'sale');
+  const sum = (a) => a.reduce((s, l) => s + l.amount, 0);
+  const close = (a) => Math.abs(a - t) <= Math.max(1, settings.sumTolerance * t);
+  if (sales.length && sales.length < money.length && sales.length * 2 >= money.length && !close(sum(sales)) && close(sum(money))) {
+    const n = money.length - sales.length;
+    money.forEach((l) => { l.kind = 'sale'; });
+    return `${n} line(s) were read as costs, but all lines together match the page total, so they were counted as sales. Check before saving.`;
+  }
+  return '';
+}
+
 const num = (v) => {
   const n = typeof v === 'string' ? Number(v.replace(/[^\d.]/g, '')) : Number(v);
   return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
@@ -233,6 +260,8 @@ export async function readPage(image, { online, confirmCloud }) {
   }
 
   let lines = result ? cleanLines(result.data, settings.maxLines) : [];
+  const fixNote = result ? reconcileKinds(lines, result.data.total_written) : '';
+  if (fixNote) trace.push(fixNote);
   let check = result ? checkLines(lines, result.data.total_written) : { ok: false, issues: [] };
   const unreadable = result && result.data.readable === false;
   if (result && !check.ok) trace.push(`Arithmetic check failed: ${check.issues.join(' ')}`);
@@ -250,6 +279,8 @@ export async function readPage(image, { online, confirmCloud }) {
       try {
         const cloud = await run(InferenceMode.ONLY_IN_CLOUD, 'lines', parts, 'en', 'read_page');
         const cl = cleanLines(cloud.data, settings.maxLines);
+        const cfix = reconcileKinds(cl, cloud.data.total_written);
+        if (cfix) trace.push(cfix);
         const cc = checkLines(cl, cloud.data.total_written);
         trace.push(cc.ok ? 'Cloud read: the numbers add up.' : `Cloud read: ${cc.issues.join(' ')} Check the lines before saving.`);
         result = cloud;

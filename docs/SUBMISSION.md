@@ -68,13 +68,14 @@ The notebook is also private: income, debts, the names of people who owe money. 
 ### Challenges we ran into
 - **Trusting a small model with money.** A misread "250" as "750" is worse than no answer. We made the arithmetic the judge: line math and the page total must agree, or the vendor sees exactly what's off before anything is saved.
 - **Photos can't be redacted.** Text can have names replaced; a photo can't. So photos never go to the cloud silently: a clear dialog explains why and asks.
+- **Small-model slips, fixed with rules, not trust.** On-device, Nano sometimes listed the page's "Total" row as a sale or called one sale a cost. Kaye now moves any "Total" row to the page total, and, when only the all-lines sum matches the written total, counts the lines as sales and says so in the trace.
 - **Short on-device output on Android.** JSON for six lines can exceed Nano's validated output length, so the device gets a compact line format and the cloud gets a schema.
 - **Kreyòl.** Nano isn't validated for Kreyòl, and that's the language of the market. Offline rules understand Kreyòl instantly ("vann 3 diri 250 chak", "Madan Pòl dwe 1200"), and the cloud gets Kreyòl notes only with names replaced.
 - **Sideloaded APKs and Play Integrity.** Judges install from a link, not the Play Store, so App Check verifies the app's signing certificate without requiring a Play install.
 
 ### Accomplishments that we're proud of
 - Tested end to end on a real phone (Galaxy S24 Ultra) and live on the web: a Kreyòl notebook page read into 5 lines in about 3 seconds with the page total verified; a Kreyòl note with 2 customer names hidden before the cloud and restored after; a monthly record written in Kreyòl from totals only.
-- **[CHECK, after testing on a Nano phone or Chrome with the Prompt API]** A notebook page read fully on-device in about X ms with nothing sent.
+- **Read fully on-device, nothing sent:** in Chrome 157 with Gemini Nano, a handwritten sales page was read on the device into 4 lines with quantities, prices and amounts, and the page total (2,100) verified by the arithmetic check. It took about 63 s on a CPU-only laptop with no dedicated GPU. Phones with AICore and laptops with a GPU are much faster.
 - No backend of our own: six Firebase products carry the whole app.
 
 ### What we learned

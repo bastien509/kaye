@@ -163,9 +163,16 @@ class Ai(private val context: Context) {
             val kind = p[0].lowercase()
             if (kind !in KINDS || p.size < 5) continue
             val amount = num(p[4]) ?: continue
-            lines += Line(kind, p[1].take(80).ifBlank { "Item" }, num(p[2]), num(p[3]), amount, p.getOrNull(5)?.takeIf { it.isNotBlank() && it != "-" })
+            lines += Line(kind, cleanItem(p[1]), num(p[2]), num(p[3]), amount, p.getOrNull(5)?.takeIf { it.isNotBlank() && it != "-" })
         }
-        return lines.take(maxLines) to total
+        return splitTotal(lines.take(maxLines), total)
+    }
+
+    // Small models sometimes list the page's "Total" row as a sale. A total is never a line.
+    private val totalRe = Regex("""^\s*(grand\s+)?(total|tot[aà]l|totalman|sous[- ]total|subtotal|sum|som|suma)\b""", RegexOption.IGNORE_CASE)
+    private fun splitTotal(lines: List<Line>, total: Double?): Pair<List<Line>, Double?> {
+        val totals = lines.filter { totalRe.containsMatchIn(it.item) }
+        return lines.filterNot { totalRe.containsMatchIn(it.item) } to (total ?: totals.lastOrNull()?.amount)
     }
 
     private fun parseJson(text: String): Pair<List<Line>, Double?> {
@@ -176,13 +183,37 @@ class Ai(private val context: Context) {
             val o = arr!!.getJSONObject(i)
             val amount = o.optDouble("amount").takeIf { !it.isNaN() && it > 0 } ?: return@mapNotNull null
             Line(
-                o.optString("kind").takeIf { it in KINDS } ?: "sale", o.optString("item").take(80).ifBlank { "Item" },
+                o.optString("kind").takeIf { it in KINDS } ?: "sale", cleanItem(o.optString("item")),
                 o.optDouble("qty").takeIf { !it.isNaN() && it > 0 }, o.optDouble("unit_price").takeIf { !it.isNaN() && it > 0 },
                 r(amount), o.optString("customer").takeIf { it.isNotBlank() },
             )
         }
         val total = j.optDouble("total_written").takeIf { !it.isNaN() && it > 0 }
-        return lines.take(maxLines) to total
+        return splitTotal(lines.take(maxLines), total)
+    }
+
+    /** "Rice 3 cups x 250 = 750" -> "Rice": the numbers already live in qty / unit price / amount. */
+    private fun cleanItem(raw: String): String =
+        raw.replace(Regex("""\s*=\s*[\d.,]+\s*$"""), "")
+            .replace(Regex("""\s+\d+(?:[.,]\d+)?\s*(?:\p{L}+\s*)?[x×*]\s*[\d.,]+.*$""", RegexOption.IGNORE_CASE), "")
+            .trim().take(80).ifBlank { "Item" }
+
+    /**
+     * If the sales alone don't match the page total but every sale+cost line together does, the small model
+     * mislabelled some lines: count them as sales. Returns a note for the trace.
+     */
+    private fun reconcileKinds(lines: List<Line>, total: Double?): String? {
+        if (total == null || total <= 0) return null
+        val money = lines.filter { it.kind == "sale" || it.kind == "expense" }
+        val sales = money.filter { it.kind == "sale" }
+        fun close(a: Double) = abs(a - total) <= max(1.0, tolerance * total)
+        if (sales.isNotEmpty() && sales.size < money.size && sales.size * 2 >= money.size &&
+            !close(sales.sumOf { it.amount }) && close(money.sumOf { it.amount })) {
+            val n = money.size - sales.size
+            money.forEach { it.kind = "sale" }
+            return "$n line(s) were read as costs, but all lines together match the page total, so they were counted as sales. Check before saving."
+        }
+        return null
     }
 
     private fun num(s: String?): Double? = s?.let { Rules.toNumber(it.filter { c -> c.isDigit() || c == '.' || c == ',' }) }?.takeIf { it > 0 }
@@ -238,6 +269,7 @@ class Ai(private val context: Context) {
         } else {
             trace += "No on-device model on this phone, so the photo cannot be read here."
         }
+        reconcileKinds(lines, total)?.let { trace += it }
         var c = check(lines, total)
         if (gotAnswer) trace += if (c.ok) "Arithmetic check passed: every line and the page total add up." else "Arithmetic check failed: ${c.issues.joinToString(" ")}"
 
@@ -253,6 +285,7 @@ class Ai(private val context: Context) {
                     val a = run(InferenceMode.ONLY_IN_CLOUD, true, "read_page") { image(photo); text(cloudPagePrompt()) }
                     val (l, t) = parseJson(a.text)
                     lines = l; total = t; source = a.source; ms = a.ms
+                    reconcileKinds(lines, total)?.let { trace += it }
                     c = check(lines, total)
                     trace += if (c.ok) "Cloud read: the numbers add up." else "Cloud read: ${c.issues.joinToString(" ")} Check the lines before saving."
                 } catch (e: Throwable) {
