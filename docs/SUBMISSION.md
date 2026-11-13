@@ -17,7 +17,7 @@ Android + Web (Chrome)
 - Web app: https://petiht.com/kaye/app.html (tap **Try it now, no account**: you get your own private notebook with sample data)
 - Android APK: https://petiht.com/kaye/get-app.html
 - Demo login (web and Android): `demo@petiht.com` / `KayeDemo509`. All sample names and numbers are invented.
-- Code (Apache-2.0): **[CHECK: https://github.com/bastien509/kaye once the repo is created]**
+- Code (Apache-2.0): https://github.com/bastien509/kaye
 - Video: **[CHECK: YouTube link]**
 
 ---
