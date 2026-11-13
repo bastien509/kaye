@@ -1,0 +1,11 @@
+{
+  "name": "Kaye · shop notebook",
+  "short_name": "Kaye",
+  "description": "Your shop notebook that reads your pages on your device, even with no signal.",
+  "start_url": "app.html#home",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fc",
+  "theme_color": "#00209F",
+  "icons": [{ "src": "assets/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

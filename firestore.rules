@@ -1,0 +1,73 @@
+rules_version = '2';
+
+// Kaye: every notebook belongs to one signed-in user. Nobody else can read or write it.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    function str(v, max) {
+      return v is string && v.size() <= max;
+    }
+    function optStr(d, k, max) {
+      return !(k in d) || d[k] == null || str(d[k], max);
+    }
+    function num(v) {
+      return (v is int || v is float) && v >= 0 && v < 1000000000;
+    }
+    function optNum(d, k) {
+      return !(k in d) || d[k] == null || num(d[k]);
+    }
+
+    function validProfile(d) {
+      return d.keys().hasOnly(['name', 'business', 'currency', 'market', 'lang', 'createdAt', 'updatedAt'])
+        && optStr(d, 'name', 80) && optStr(d, 'business', 80) && optStr(d, 'currency', 8)
+        && optStr(d, 'market', 80) && optStr(d, 'lang', 5);
+    }
+
+    function validEntry(d) {
+      return d.keys().hasOnly(['kind', 'item', 'qty', 'unitPrice', 'amount', 'customerId', 'date',
+                               'method', 'ai', 'note', 'pageId', 'createdAt', 'updatedAt'])
+        && d.kind in ['sale', 'expense', 'credit', 'payment']
+        && num(d.amount)
+        && str(d.date, 10)
+        && d.method in ['photo', 'text', 'voice', 'manual']
+        && d.ai in ['on_device', 'in_cloud', 'rules', 'manual']
+        && optStr(d, 'item', 120) && optStr(d, 'note', 300) && optStr(d, 'customerId', 64) && optStr(d, 'pageId', 64)
+        && optNum(d, 'qty') && optNum(d, 'unitPrice');
+    }
+
+    function validCustomer(d) {
+      return d.keys().hasOnly(['name', 'phone', 'note', 'createdAt', 'updatedAt'])
+        && str(d.name, 80) && d.name.size() > 0
+        && optStr(d, 'phone', 32) && optStr(d, 'note', 200);
+    }
+
+    function validReport(d) {
+      return d.keys().hasOnly(['month', 'summary', 'highlights', 'ai', 'ms', 'totals', 'createdAt'])
+        && str(d.month, 7) && str(d.summary, 2000)
+        && (!('highlights' in d) || (d.highlights is list && d.highlights.size() <= 8))
+        && d.ai in ['on_device', 'in_cloud', 'rules']
+        && (!('totals' in d) || d.totals is map);
+    }
+
+    match /users/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validProfile(request.resource.data);
+
+      match /entries/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validEntry(request.resource.data);
+      }
+      match /customers/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validCustomer(request.resource.data);
+      }
+      match /reports/{id} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validReport(request.resource.data);
+      }
+    }
+  }
+}

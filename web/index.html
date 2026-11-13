@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kaye · the shop notebook that reads itself</title>
+<meta name="description" content="Snap a page of your sales notebook. Gemini Nano reads it on your device, checks the arithmetic and keeps your books, even with no signal. Built with Firebase AI Logic.">
+<meta property="og:title" content="Kaye · the shop notebook that reads itself">
+<meta property="og:description" content="Hybrid on-device + cloud AI for market vendors. Firebase AI Logic, Auth, Firestore offline, Remote Config, Analytics.">
+<meta name="theme-color" content="#00209F">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=IBM+Plex+Mono:wght@500&family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="assets/app.css?v=2">
+<link rel="stylesheet" href="assets/site.css?v=2">
+</head>
+<body class="site">
+<header class="snav">
+  <a class="brand" href="./"><img src="assets/logo.svg" alt="" width="34" height="34"><span>Kaye</span></a>
+  <nav><a href="#how">How it works</a><a href="#hybrid">Hybrid AI</a><a href="#privacy">Privacy</a><a href="#judges">Judges</a></nav>
+  <a class="btn primary" href="app.html">Open Kaye</a>
+</header>
+
+<main>
+<section class="hero">
+  <div class="hero-copy">
+    <p class="hand">Kaye ou, ki konn kalkile.</p>
+    <h1>Your shop notebook, <mark>now it reads itself.</mark></h1>
+    <p class="lead">Snap a page of your sales notebook. <b>Gemini Nano reads it on your phone</b>, checks the arithmetic and keeps your books, even with no signal. At the end of the month you have a clean record to show a lender.</p>
+    <div class="cta">
+      <a class="btn red big" href="app.html">Try it now, no account</a>
+      <a class="btn ghost big" href="get-app.html">Get the Android app</a>
+    </div>
+    <ul class="ticks">
+      <li>Works offline, syncs later</li><li>Photos stay on the device</li><li>Kreyòl, French, English, Spanish</li>
+    </ul>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="page">
+      <span class="scan"></span>
+      <p class="t">Madi 11 — Lavant</p>
+      <p>Diri 4 mamit x 250 = 1000</p>
+      <p>Pwa 2 x 300 = 600</p>
+      <p>Savon 5 x 60 = 300</p>
+      <p class="tot">Total 1900</p>
+      <p>Kredi: Madan Pòl 500</p>
+    </div>
+    <div class="read">
+      <div class="read-head"><b>4 lines found</b><span class="badge src-on_device"><svg class="ic" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1" fill="currentColor"/></svg>On this device · 0 bytes sent</span></div>
+      <ul>
+        <li class="k-sale"><span>Diri · 4 × 250</span><b>+1,000 G</b></li>
+        <li class="k-sale"><span>Pwa · 2 × 300</span><b>+600 G</b></li>
+        <li class="k-sale"><span>Savon · 5 × 60</span><b>+300 G</b></li>
+        <li class="k-credit"><span>Credit · Madan Pòl</span><b>500 G</b></li>
+      </ul>
+      <p class="okline"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>The numbers add up: 1,900 G</p>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div><b>≈ 2 billion</b><span>people work in the informal economy (ILO)</span></div>
+  <div><b>Paper</b><span>is where most market vendors keep their books, if they keep them</span></div>
+  <div><b>No record</b><span>means no microloan, and credit given to neighbours gets forgotten</span></div>
+</section>
+
+<section id="how" class="sec">
+  <p class="eyebrow">How it works</p>
+  <h2>From a notebook page to clean books in four steps.</h2>
+  <div class="steps">
+    <article><span>1</span><h3>Snap</h3><p>Photograph a notebook page or a receipt, or type a quick note: “Sold 3 rice, 250 each. Marie owes 500.”</p></article>
+    <article><span>2</span><h3>Read on the device</h3><p>Gemini Nano turns it into sales, costs, credit and payments, right on the device.</p></article>
+    <article><span>3</span><h3>Check the math</h3><p>Kaye checks every line and the page total. If the numbers don't add up, it asks you, and only then offers the cloud.</p></article>
+    <article><span>4</span><h3>Sync and show</h3><p>Firestore keeps it all offline and syncs when there's signal. The month record is ready to show a lender.</p></article>
+  </div>
+</section>
+
+<section id="hybrid" class="sec alt">
+  <p class="eyebrow">Hybrid inference with Firebase AI Logic</p>
+  <h2>The device first. The cloud only when it should, with only what it needs.</h2>
+  <div class="routes">
+    <div class="route dev"><h3>Notebook photo</h3><p><code>ONLY_ON_DEVICE</code> with Gemini Nano. If it can't read the page or the numbers don't add up, Kaye asks before sending that one photo to the cloud.</p><span>Leaves the device: nothing, unless you say yes</span></div>
+    <div class="route dev"><h3>Quick note, English or Spanish</h3><p><code>ONLY_ON_DEVICE</code>. The note never leaves the device.</p><span>Leaves the device: nothing</span></div>
+    <div class="route cloud"><h3>Quick note, Kreyòl or French</h3><p><code>ONLY_IN_CLOUD</code> after customer names and phone numbers are replaced on the device (“C1 owes 500”). Names are put back on the device.</p><span>Leaves the device: the note, without names</span></div>
+    <div class="route cloud"><h3>Month record</h3><p><code>PREFER_ON_DEVICE</code> or <code>PREFER_IN_CLOUD</code> by language, built from <b>totals only</b>.</p><span>Leaves the device: totals, never entries</span></div>
+    <div class="route off"><h3>No signal, no model</h3><p>Offline rules in four languages understand “vann 3 diri 250 chak” instantly. Everything is saved and syncs later.</p><span>Leaves the device: nothing</span></div>
+  </div>
+  <p class="muted">Every result shows where the AI ran (<code>inferenceSource</code>), how long it took and why. Routing settings live in Remote Config, so they change without a new app build.</p>
+</section>
+
+<section class="sec">
+  <p class="eyebrow">Built on Firebase</p>
+  <h2>Six Firebase products, each doing real work.</h2>
+  <div class="stack-grid">
+    <article><h3>AI Logic</h3><p>Hybrid Gemini Nano + Gemini cloud, on Android and in Chrome.</p></article>
+    <article><h3>Firestore offline</h3><p>Your notebook lives on the device first and syncs when there's signal.</p></article>
+    <article><h3>Authentication</h3><p>Start with no account; save the notebook to an email later.</p></article>
+    <article><h3>Remote Config</h3><p>Cloud model, on-device languages and check tolerance, changed live.</p></article>
+    <article><h3>Analytics</h3><p>Counts where the AI ran and how fast. Never your lines.</p></article>
+    <article><h3>App Check</h3><p>Play Integrity on Android, reCAPTCHA Enterprise on the web.</p></article>
+  </div>
+</section>
+
+<section id="privacy" class="sec alt">
+  <p class="eyebrow">Privacy, in plain words</p>
+  <h2>Your money, your customers, your notebook.</h2>
+  <ul class="promises">
+    <li><b>Photos stay on the device.</b> One goes to the cloud only after you tap “Send this photo”.</li>
+    <li><b>The AI never sees customer names</b> in the cloud: they're replaced first and put back on the device.</li>
+    <li><b>Only you can read your notebook.</b> Firestore security rules lock every page to your account.</li>
+    <li><b>No advice.</b> Kaye keeps records. It never tells you to borrow, spend or invest.</li>
+  </ul>
+</section>
+
+<section id="judges" class="sec judges-box">
+  <h2>For the #BuildHybridAI judges</h2>
+  <p>Open <a href="app.html">Kaye</a> and tap <b>Try it now, no account</b> to get your own private notebook with sample data. Or sign in with <code>demo@petiht.com</code> / <code>KayeDemo509</code>. Every name and number in the samples is invented.</p>
+  <p>On-device photo reading needs Chrome 138+ on desktop with the Prompt API and multimodal input enabled, or the <a href="get-app.html">Android app</a> on a phone with Gemini Nano (AICore). Without a local model, Kaye asks before using the cloud.</p>
+  <p><a href="https://github.com/bastien509/kaye">Source code on GitHub (Apache-2.0)</a></p>
+</section>
+</main>
+
+<footer class="sfoot">
+  <span>Kaye · made in Haiti for market vendors everywhere · <a href="https://petiht.com">Petiht</a></span>
+  <span>Kaye keeps records. It does not give financial advice.</span>
+</footer>
+</body>
+</html>

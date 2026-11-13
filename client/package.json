@@ -1,0 +1,14 @@
+{
+  "name": "kaye-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "esbuild": "0.28.2",
+    "firebase": "13.3.0"
+  }
+}

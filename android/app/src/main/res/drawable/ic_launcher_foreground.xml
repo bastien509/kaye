@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notebook page: red margin, ruled lines, a check mark and a yellow dot. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFFFF" android:pathData="M36,30h36a6,6 0,0 1,6 6v36a6,6 0,0 1,-6 6h-36a6,6 0,0 1,-6 -6v-36a6,6 0,0 1,6 -6z" />
+    <path android:strokeColor="#3300209F" android:strokeWidth="1.4" android:pathData="M30,44h48M30,53h48M30,62h48M30,71h48" />
+    <path android:strokeColor="#D21034" android:strokeWidth="2" android:pathData="M40,30v48" />
+    <path android:strokeColor="#0B1533" android:strokeWidth="4" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M46,54l5,5l12,-12" />
+    <path android:fillColor="#F5C518" android:strokeColor="#FFFFFF" android:strokeWidth="2" android:pathData="M68,34a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+</vector>
