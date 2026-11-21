@@ -1,7 +1,7 @@
 // Kaye service worker: keeps the app shell available with no signal.
 // Firestore keeps the notebook data offline on its own; this only caches Kaye's own files.
-const CACHE = 'kaye-shell-v4';
-const SHELL = ['app.html', 'assets/app.css?v=4', 'assets/kaye.js?v=4', 'assets/logo.svg', 'manifest.webmanifest'];
+const CACHE = 'kaye-shell-v5';
+const SHELL = ['app.html', 'assets/app.css?v=5', 'assets/kaye.js?v=5', 'assets/logo.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

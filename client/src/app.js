@@ -408,10 +408,10 @@ function draftView(d, onSaved) {
   const refresh = () => {
     const c = checkLines(d.lines, d.totalWritten);
     d.check = c;
-    banner.replaceChildren(d.method === 'photo'
+    banner.replaceChildren(...[d.method === 'photo'
       ? h('div', { class: `banner ${c.ok ? 'ok' : 'warn'}` }, icon(c.ok ? 'check' : 'alert'),
         h('div', null, h('b', null, c.ok ? 'The numbers add up.' : 'Check these numbers'), c.ok ? h('small', null, `Lines total ${m$(c.sum)}${c.total ? `, page total ${m$(c.total)}` : ''}.`) : h('ul', null, c.issues.map((i) => h('li', null, i)))))
-      : null);
+      : null].filter(Boolean)); // replaceChildren(null) would print "null"
     saveBtn.replaceChildren(icon('check'), `Save ${d.lines.length} line${d.lines.length === 1 ? '' : 's'}`);
     saveBtn.disabled = !d.lines.length;
   };
