@@ -75,6 +75,52 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
+// ---------------- installed app: install button, shared photos, opened files ----------------
+
+/** A photo handed to Kaye from outside (Android share sheet, "Open with" on desktop). Snap picks it up. */
+function receivePhoto(blob, label) {
+  if (!blob || !/^image\/(png|jpeg)$/.test(blob.type)) { toast('Kaye reads PNG or JPEG photos.', 'bad'); return; }
+  S.incoming = { blob, label: label || 'Shared photo' };
+  if (route() === 'snap') render(); else location.hash = '#snap';
+}
+
+// Android share sheet → the service worker stores the photo, then opens app.html?shared=1#snap.
+if (new URLSearchParams(location.search).has('shared')) {
+  history.replaceState(null, '', location.pathname + (location.hash || '#snap'));
+  caches.open('kaye-share').then(async (c) => {
+    const hit = await c.match('shared-photo');
+    if (!hit) return;
+    await c.delete('shared-photo');
+    receivePhoto(await hit.blob(), 'Shared photo');
+  }).catch(() => {});
+}
+
+// Desktop "Open with Kaye" (manifest file_handlers).
+if ('launchQueue' in window) {
+  window.launchQueue.setConsumer(async (params) => {
+    const handle = params.files?.[0];
+    if (handle) { const f = await handle.getFile(); receivePhoto(f, f.name); }
+  });
+}
+
+// Paste a photo (Ctrl+V) while on Snap.
+document.addEventListener('paste', (e) => {
+  if (route() !== 'snap' || !S.snapTake) return;
+  const item = [...(e.clipboardData?.items || [])].find((i) => i.kind === 'file');
+  if (item) S.snapTake(item.getAsFile(), 'Pasted photo');
+});
+
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); S.installEvt = e; renderStatus(); });
+window.addEventListener('appinstalled', () => { S.installEvt = null; renderStatus(); track('app_installed', {}); toast('Kaye is installed.', 'ok'); });
+async function installApp() {
+  const e = S.installEvt;
+  if (!e) return;
+  S.installEvt = null;
+  e.prompt();
+  await e.userChoice.catch(() => null);
+  renderStatus();
+}
+
 loadRemoteConfig().then((r) => { S.rc = r; if (route() === 'settings') render(); });
 refreshNano();
 
@@ -130,7 +176,8 @@ function renderStatus() {
       downloading: ['', 'Gemini Nano: downloading'], unavailable: ['muted', 'No on-device model'], unsupported: ['muted', 'No on-device model'],
     };
     const [cls, label] = map[S.nano] || map.unsupported;
-    nano.replaceChildren(h('a', { class: `chip ${cls}`, href: '#settings' }, icon('chip'), label));
+    nano.replaceChildren(h('a', { class: `chip ${cls}`, href: '#settings' }, icon('chip'), label),
+      ...(S.installEvt ? [h('button', { class: 'chip install', type: 'button', onclick: installApp }, icon('download'), 'Install Kaye')] : []));
   }
 }
 
@@ -263,7 +310,7 @@ function viewHome() {
         h('p', { class: 'muted' }, [S.profile.market, new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })].filter(Boolean).join(' · ')))),
     h('div', { class: 'kpis' },
       kpi('Sales today', m$(t.sales), 'up'), kpi('Costs today', m$(t.expenses), 'down'),
-      kpi('Profit today', m$(t.profit), t.profit >= 0 ? 'up' : 'down'), kpi('Customers owe you', m$(owed), 'owed', '#owed')),
+      kpi('Profit today', m$(t.profit), t.profit >= 0 ? 'up' : 'down'), kpi('Customers owe you', m$(owed), 'owes', '#owed')),
     h('div', { class: 'month-strip' },
       h('span', null, h('b', null, 'This month: '), `${m$(m.sales)} sales · ${m$(m.profit)} profit`),
       m.on_device_share != null ? h('span', { class: 'chip ok' }, icon('chip'), `${m.on_device_share}% of AI reads stayed on the device`) : null),
@@ -337,9 +384,23 @@ function viewSnap() {
     }
   } }, icon('spark'), 'Read this page');
 
+  const takeFile = (f, label) => {
+    if (!f || !/^image\/(png|jpeg)$/.test(f.type)) { toast('Kaye reads PNG or JPEG photos.', 'bad'); return; }
+    if (f.size > 12 * 1024 * 1024) { toast('That photo is over 12 MB.', 'bad'); return; }
+    showPhoto(f, URL.createObjectURL(f), label || f.name);
+  };
+  // Desktop Chrome: drop a photo on the box, or paste one (Ctrl+V).
+  const drop = h('label', { class: 'drop', for: 'photo',
+    ondragover: (e) => { e.preventDefault(); drop.classList.add('over'); },
+    ondragleave: () => drop.classList.remove('over'),
+    ondrop: (e) => { e.preventDefault(); drop.classList.remove('over'); takeFile(e.dataTransfer?.files?.[0]); },
+  }, icon('camera'), h('b', null, 'Take a photo or choose one'), h('small', null, 'A notebook page or a receipt, PNG or JPEG. You can also drop or paste one here.'));
+  S.snapTake = takeFile;
+  if (S.incoming) { const { blob, label } = S.incoming; S.incoming = null; setTimeout(() => takeFile(blob, label)); }
+
   wrap.append(
     h('section', { class: 'card snap' },
-      h('label', { class: 'drop', for: 'photo' }, icon('camera'), h('b', null, 'Take a photo or choose one'), h('small', null, 'A notebook page or a receipt, PNG or JPEG')), file,
+      drop, file,
       h('div', { class: 'samples' }, h('span', { class: 'muted small' }, 'No notebook here? Try a sample page:'),
         SAMPLE_PAGES.map((p) => h('button', { class: 'chipbtn', title: p.note || '', onclick: async () => { const s = await drawSample(p.id); showPhoto(s.blob, s.url, p.label); } }, p.label))),
       preview, readBtn),
@@ -476,7 +537,7 @@ function viewOwed() {
   const kind = select(['credit', 'payment'], 'credit', { credit: 'took on credit', payment: 'paid back' });
   return h('div', null,
     h('header', { class: 'vh' }, h('h1', null, 'Who owes me'), h('p', { class: 'muted' }, 'Names stay in your private notebook. The AI never sees them.')),
-    h('div', { class: 'kpis two' }, kpi('Customers owe you', m$(total), 'owed'), kpi('Customers', String(owing.length), '')),
+    h('div', { class: 'kpis two' }, kpi('Customers owe you', m$(total), 'owes'), kpi('Customers', String(owing.length), '')),
     h('section', { class: 'card' },
       h('h2', null, 'Add credit or a payment'),
       h('form', { class: 'inline-form', onsubmit: async (e) => {
@@ -553,7 +614,7 @@ function viewMonth() {
       h('button', { class: 'btn ghost', 'aria-label': 'Previous month', onclick: () => setMonth(-1) }, '‹'),
       h('div', null, h('h1', null, label), h('p', { class: 'muted' }, `${S.profile.business || ''}${S.profile.market ? ` · ${S.profile.market}` : ''}`)),
       h('button', { class: 'btn ghost', 'aria-label': 'Next month', disabled: month >= monthOf(today()), onclick: () => setMonth(1) }, '›')),
-    h('div', { class: 'kpis' }, kpi('Sales', m$(t.sales), 'up'), kpi('Costs', m$(t.expenses), 'down'), kpi('Profit', m$(t.profit), t.profit >= 0 ? 'up' : 'down'), kpi('Owed to you', m$(t.owed), 'owed')),
+    h('div', { class: 'kpis' }, kpi('Sales', m$(t.sales), 'up'), kpi('Costs', m$(t.expenses), 'down'), kpi('Profit', m$(t.profit), t.profit >= 0 ? 'up' : 'down'), kpi('Owed to you', m$(t.owed), 'owes')),
     h('div', { class: 'grid2' },
       h('section', { class: 'card' }, h('h2', null, 'Sales by week'),
         h('div', { class: 'weeks' }, t.by_week.map((w, i) => {

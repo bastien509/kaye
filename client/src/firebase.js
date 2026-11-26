@@ -2,7 +2,7 @@
 // Analytics, Remote Config and Firebase AI Logic. These web config values are public identifiers.
 import { initializeApp } from 'firebase/app';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
-import { getAuth } from 'firebase/auth';
+import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { initializeAnalytics, isSupported, logEvent } from 'firebase/analytics';
 import { getRemoteConfig, fetchAndActivate, getValue } from 'firebase/remote-config';
@@ -26,7 +26,9 @@ try {
   initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true });
 } catch { /* already initialised */ }
 
-export const auth = getAuth(app);
+// initializeAuth without a popup/redirect resolver: Kaye only uses anonymous and email sign-in,
+// so it never loads apis.google.com (which the page's CSP blocks).
+export const auth = initializeAuth(app, { persistence: [indexedDBLocalPersistence, browserLocalPersistence] });
 
 // Offline-first: every read and write works with no signal and syncs when it comes back.
 export const db = initializeFirestore(app, {
