@@ -478,11 +478,12 @@ function draftView(d, onSaved) {
   };
   const row = (l) => {
     const kind = select(Object.keys(KIND), l.kind, KIND);
-    const item = h('input', { value: l.item || '', maxlength: '80', 'aria-label': 'Item' });
-    const qty = h('input', { type: 'number', min: '0', step: 'any', value: l.qty ?? '', placeholder: 'qty', 'aria-label': 'Quantity' });
-    const price = h('input', { type: 'number', min: '0', step: 'any', value: l.unit_price ?? '', placeholder: 'price', 'aria-label': 'Unit price' });
-    const amount = h('input', { type: 'number', min: '0', step: 'any', value: l.amount ?? '', 'aria-label': 'Amount', class: 'amt-in' });
-    const cust = h('input', { value: l.customer || '', placeholder: 'customer', maxlength: '60', 'aria-label': 'Customer', list: 'custlist' });
+    kind.classList.add('f-kind'); kind.setAttribute('aria-label', 'Type');
+    const item = h('input', { value: l.item || '', maxlength: '80', placeholder: 'item', 'aria-label': 'Item', class: 'f-item' });
+    const qty = h('input', { type: 'number', min: '0', step: 'any', value: l.qty ?? '', placeholder: 'qty', 'aria-label': 'Quantity', class: 'f-qty' });
+    const price = h('input', { type: 'number', min: '0', step: 'any', value: l.unit_price ?? '', placeholder: 'price', 'aria-label': 'Unit price', class: 'f-price' });
+    const amount = h('input', { type: 'number', min: '0', step: 'any', value: l.amount ?? '', placeholder: 'amount', 'aria-label': 'Amount', class: 'amt-in' });
+    const cust = h('input', { value: l.customer || '', placeholder: 'customer', maxlength: '60', 'aria-label': 'Customer', list: 'custlist', class: 'f-cust' });
     const showCust = () => cust.classList.toggle('hidden', !(kind.value === 'credit' || kind.value === 'payment'));
     const sync = () => {
       l.kind = kind.value; l.item = item.value; l.qty = num(qty.value); l.unit_price = num(price.value); l.amount = num(amount.value) || 0; l.customer = cust.value.trim() || null;
@@ -514,7 +515,7 @@ function draftView(d, onSaved) {
     tbody,
     h('datalist', { id: 'custlist' }, S.customers.map((c) => h('option', { value: c.name }))),
     h('button', { class: 'link', type: 'button', onclick: () => { const l = { kind: 'sale', item: '', qty: null, unit_price: null, amount: 0, customer: null }; d.lines.push(l); tbody.append(row(l)); refresh(); } }, '+ Add a line'),
-    h('div', { class: 'row2 end' }, field('Date', date), saveBtn),
+    h('div', { class: 'save-row' }, field('Date', date), saveBtn),
     trace(d.trace));
   refresh();
   return box;

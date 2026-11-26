@@ -1,9 +1,9 @@
 // Kaye service worker: keeps the app shell available with no signal, and receives photos
 // shared to the installed app (manifest share_target).
 // Firestore keeps the notebook data offline on its own; this only caches Kaye's own files.
-const CACHE = 'kaye-shell-v8';
+const CACHE = 'kaye-shell-v9';
 const SHARE = 'kaye-share'; // holds one shared photo until the app picks it up
-const SHELL = ['app.html', 'assets/app.css?v=8', 'assets/kaye.js?v=8', 'assets/logo.svg', 'assets/icons/icon-192.png', 'manifest.webmanifest'];
+const SHELL = ['app.html', 'assets/app.css?v=9', 'assets/kaye.js?v=9', 'assets/logo.svg', 'assets/icons/icon-192.png', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   // cache: 'reload' skips the browser's HTTP cache, so a new version never stores an old file.

@@ -184,20 +184,28 @@ a.kpi:hover { border-color: var(--green); }
 .banner.warn { background: var(--amber-soft); color: var(--amber); }
 .banner ul { margin: 4px 0 0; padding-left: 18px; color: var(--ink); }
 .banner b { display: block; }
-.lines-head, .line { display: grid; grid-template-columns: 112px 1fr 64px 80px 96px 28px; gap: 6px; align-items: center; }
+.lines-head, .line { display: grid; grid-template-columns: 112px minmax(0, 1fr) 64px 80px 96px 32px; gap: 6px; align-items: center; }
 .lines-head { margin-top: 14px; font-size: .72rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 0 2px; }
-.line { padding: 6px 0; border-bottom: 1px dashed var(--line); }
-.line input, .line select { padding: 8px 9px; font-size: .9rem; }
+.line { --k: var(--green); padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.line.k-expense { --k: var(--cta); } .line.k-credit { --k: var(--sun); } .line.k-payment { --k: var(--accent); }
+.line input, .line select { padding: 8px 9px; font-size: .9rem; min-width: 0; }
 .line .amt-in { font-family: var(--mono); font-weight: 600; }
-.line > input[list] { grid-column: 2 / 6; }
-.line.k-credit, .line.k-payment { grid-template-rows: auto auto; }
+.line .f-cust { grid-column: 2 / 6; }
+.line .x { grid-column: 6; grid-row: 1; }
 .line.k-expense .amt-in { color: var(--cta); }
+.save-row { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 12px; align-items: end; margin-top: 14px; }
 @media (max-width: 640px) {
   .lines-head { display: none; }
-  .line { grid-template-columns: 1fr 1fr 1fr 28px; }
-  .line select { grid-column: 1 / 2; }
-  .line input:nth-of-type(1) { grid-column: 2 / 4; }
-  .line > input[list] { grid-column: 1 / 4; }
+  .lines { display: grid; gap: 10px; margin-top: 12px; }
+  .line { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) 32px; grid-template-areas: "kind item item x" "qty price amt amt" "cust cust cust cust";
+    padding: 10px 10px 10px 12px; border: 1px solid var(--line); border-left: 4px solid var(--k); border-radius: 14px; background: var(--paper2); }
+  .line .f-kind { grid-area: kind; } .line .f-item { grid-area: item; } .line .x { grid-area: x; }
+  .line .f-qty { grid-area: qty; } .line .f-price { grid-area: price; } .line .amt-in { grid-area: amt; text-align: right; }
+  .line .f-cust { grid-area: cust; }
+  .line input, .line select { background: var(--paper); }
+  .line .f-kind { padding-right: 2px; padding-left: 7px; font-size: .82rem; }
+  .save-row { grid-template-columns: 1fr; }
+  .save-row .btn { width: 100%; }
 }
 .trace { margin-top: 14px; border-radius: 14px; background: var(--paper2); border: 1px solid var(--line); padding: 10px 14px; }
 .trace summary { cursor: pointer; font-weight: 800; display: flex; gap: 8px; align-items: center; color: var(--accent); }
@@ -206,7 +214,7 @@ a.kpi:hover { border-color: var(--green); }
 
 /* ---------- owed ---------- */
 .inline-form { display: grid; grid-template-columns: 2fr 1.4fr 1fr auto; gap: 8px; align-items: center; }
-@media (max-width: 640px) { .inline-form { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .inline-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .inline-form > :first-child, .inline-form > .btn { grid-column: 1 / -1; } }
 .owed { list-style: none; margin: 0; padding: 0; }
 .owed li { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--line); }
 .owed .who { display: flex; gap: 10px; align-items: center; }
