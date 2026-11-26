@@ -597,74 +597,117 @@ function recordView(r, source, ms, tr) {
 
 // ---------------- settings ----------------
 
+const NANO_LABEL = {
+  available: ['ok', 'Ready'], 'text-only': ['ok', 'Text only'], downloadable: ['warn', 'Can download'],
+  downloading: ['warn', 'Downloading'], unavailable: ['muted', 'Unavailable'], unsupported: ['muted', 'Not supported'],
+};
+
 function viewSettings() {
   const p = S.profile;
-  const name = h('input', { value: p.name || '', maxlength: '80' });
-  const business = h('input', { value: p.business || '', maxlength: '80' });
+  const name = h('input', { value: p.name || '', maxlength: '80', autocomplete: 'name' });
+  const business = h('input', { value: p.business || '', maxlength: '80', autocomplete: 'organization' });
   const market = h('input', { value: p.market || '', maxlength: '80' });
   const currency = select(['HTG', 'USD', 'DOP', 'EUR', 'XOF', 'MXN'], p.currency || 'HTG');
   const lang = select(Object.keys(LANGS), p.lang || 'en', LANGS);
   const prog = h('progress', { max: '1', value: '0', class: 'hidden' });
   const isDemo = S.user.email === DEMO_EMAIL;
+  const anon = S.user.isAnonymous;
+  const [nanoTone, nanoText] = NANO_LABEL[S.nano] || NANO_LABEL.unsupported;
+  const sync = !S.online ? ['warn', 'No signal'] : S.pending ? ['warn', 'Waiting'] : ['ok', 'Synced'];
 
-  const acct = S.user.isAnonymous
+  const cardHead = (ic, title, sub) => h('div', { class: 'set-head' },
+    h('span', { class: 'set-ic' }, icon(ic)), h('div', null, h('h2', null, title), sub ? h('p', { class: 'muted small' }, sub) : null));
+  const wide = (el, cls) => { el.classList.add(cls); return el; };
+  const goTo = (id) => () => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const tile = (label, value, tone, ic, target) => h('button', { class: `set-tile ${tone}`, type: 'button', onclick: goTo(target) },
+    h('span', { class: 'set-tile-ic' }, icon(ic)), h('span', { class: 'set-tile-t' }, h('small', null, label), h('b', null, value)));
+
+  const accountCard = anon
     ? (() => {
-      const em = h('input', { type: 'email', placeholder: 'Email', autocomplete: 'username' });
-      const pw = h('input', { type: 'password', placeholder: 'Password (6+)', autocomplete: 'new-password', minlength: '6' });
-      return h('form', { class: 'inline-form', onsubmit: async (e) => {
-        e.preventDefault();
-        try {
-          await linkWithCredential(S.user, EmailAuthProvider.credential(em.value.trim(), pw.value));
-          track('sign_up', { method: 'link_anonymous' });
-          toast('Your notebook is saved to this email.', 'ok');
-          render();
-        } catch (x) { toast(authMessage(x), 'bad'); }
-      } }, h('p', { class: 'muted small' }, 'You are using Kaye without an account. Add an email to keep this notebook on any device.'), em, pw, h('button', { class: 'btn primary', type: 'submit' }, 'Save my notebook'));
-    })()
-    : h('p', null, 'Signed in as ', h('b', null, S.user.email));
-
-  return h('div', null,
-    h('header', { class: 'vh' }, h('h1', null, 'Settings')),
-    h('div', { class: 'grid2' },
-      h('section', { class: 'card' }, h('h2', null, 'Your business'),
-        h('form', { class: 'stack', onsubmit: (e) => {
+      const em = h('input', { type: 'email', placeholder: 'you@example.com', autocomplete: 'username', required: true });
+      const pw = h('input', { type: 'password', placeholder: '6 characters or more', autocomplete: 'new-password', minlength: '6', required: true });
+      return h('section', { class: 'card set-card set-save', id: 'set-account' },
+        cardHead('shield', 'Save your notebook', 'You are using Kaye without an account. Add an email to keep this notebook on any device.'),
+        h('form', { class: 'set-form', onsubmit: async (e) => {
           e.preventDefault();
-          const np = { name: name.value, business: business.value, market: market.value, currency: currency.value, lang: lang.value };
-          store.saveProfile(S.user.uid, np).catch(() => {});
-          S.profile = { ...S.profile, ...np };
-          toast('Saved.', 'ok');
-        } }, field('Name', name), field('Business', business), field('Market', market), h('div', { class: 'row2' }, field('Currency', currency), field('Language', lang)),
-        h('button', { class: 'btn primary', type: 'submit' }, 'Save'))),
-      h('section', { class: 'card' }, h('h2', null, 'AI on this device'),
-        h('p', null, 'Status: ', h('b', null, S.nano)),
-        h('p', { class: 'muted small' }, 'Gemini Nano runs inside Chrome on this computer. Photos and notes read here never leave it. Chrome 138+ on desktop with the Prompt API; photos need multimodal input enabled.'),
-        h('button', { class: 'btn primary', disabled: S.nano === 'available', onclick: async (e) => {
-          e.currentTarget.disabled = true; // re-rendered below
-          prog.classList.remove('hidden');
-          const ok = await prepareDevice((ev) => { prog.value = ev.loaded ?? 0; });
-          prog.classList.add('hidden');
-          await refreshNano();
-          toast(ok ? 'Gemini Nano is ready on this device.' : 'This browser cannot run Gemini Nano. Kaye will use the cloud with your OK.', ok ? 'ok' : '');
-          render();
-        } }, icon('chip'), S.nano === 'available' ? 'Ready' : 'Get Gemini Nano'), prog,
-        h('h3', null, 'Remote Config'),
-        h('p', { class: 'muted small' }, `Settings from ${S.rc === 'remote' ? 'Firebase Remote Config' : 'the app defaults'}: cloud model ${settings.cloudModel}; on-device languages ${settings.deviceLanguages.join(', ')}; total check tolerance ${Math.round(settings.sumTolerance * 100)}%; cloud photos ${settings.cloudPhotos ? 'allowed with your OK' : 'off'}.`)),
-      h('section', { class: 'card' }, h('h2', null, 'Account'), acct,
-        h('button', { class: 'btn ghost', onclick: () => signOut(auth) }, 'Sign out')),
-      h('section', { class: 'card' }, h('h2', null, 'Notebook'),
-        h('p', { class: 'muted small' }, 'Your notebook is stored in your private Firebase account and on this device, so it works with no signal. Only you can read it.'),
-        h('div', { class: 'row-btns' },
-          h('button', { class: 'btn ghost', onclick: async () => { await store.seedSample(S.user.uid); toast('Sample notebook loaded.', 'ok'); } }, 'Load sample notebook'),
-          h('button', { class: 'btn ghost danger', onclick: async () => {
-            if (!confirm(isDemo ? 'Reset the demo notebook to the sample data?' : 'Delete every line, customer and record in this notebook? This cannot be undone.')) return;
-            await store.clearNotebook(S.user.uid);
-            if (isDemo) await store.seedSample(S.user.uid);
-            toast(isDemo ? 'Demo notebook reset.' : 'Notebook cleared.', 'ok');
-          } }, isDemo ? 'Reset demo notebook' : 'Clear my notebook')))),
-    h('section', { class: 'card privacy' }, h('h2', null, 'Privacy, in plain words'),
-      h('ul', null,
-        h('li', null, 'Photos are read by Gemini Nano on this device. A photo goes to the cloud only after you tap “Send this photo”.'),
-        h('li', null, 'Quick notes go to the cloud only when no on-device model can read them, and customer names and phone numbers are replaced first.'),
-        h('li', null, 'The monthly record is written from totals only.'),
-        h('li', null, 'Analytics counts where the AI ran and how long it took. Never your lines, names or amounts.'))));
+          try {
+            await linkWithCredential(S.user, EmailAuthProvider.credential(em.value.trim(), pw.value));
+            track('sign_up', { method: 'link_anonymous' });
+            toast('Your notebook is saved to this email.', 'ok');
+            render();
+          } catch (x) { toast(authMessage(x), 'bad'); }
+        } }, field('Email', em), field('Password', pw),
+        h('div', { class: 'set-actions' }, h('button', { class: 'btn red', type: 'submit' }, 'Save my notebook'),
+          h('button', { class: 'btn ghost', type: 'button', onclick: () => signOut(auth) }, 'Sign out'))));
+    })()
+    : h('section', { class: 'card set-card', id: 'set-account' },
+      cardHead('people', 'Account'),
+      h('div', { class: 'set-who' }, h('span', { class: 'set-avatar' }, (S.user.email || '?')[0].toUpperCase()),
+        h('div', null, h('small', { class: 'muted' }, 'Signed in as'), h('b', null, S.user.email))),
+      h('div', { class: 'set-actions' }, h('button', { class: 'btn ghost', onclick: () => signOut(auth) }, 'Sign out')));
+
+  const businessCard = h('section', { class: 'card set-card', id: 'set-business' },
+    cardHead('home', 'Your business', 'Shown on your month record.'),
+    h('form', { class: 'set-form', onsubmit: (e) => {
+      e.preventDefault();
+      const np = { name: name.value, business: business.value, market: market.value, currency: currency.value, lang: lang.value };
+      store.saveProfile(S.user.uid, np).catch(() => {});
+      S.profile = { ...S.profile, ...np };
+      toast('Saved.', 'ok');
+    } },
+    h('div', { class: 'set-fields' }, wide(field('Name', name), 'f-name'), wide(field('Business', business), 'f-name'), wide(field('Market', market), 'f-wide'), field('Currency', currency), field('Language', lang)),
+    h('div', { class: 'set-actions' }, h('button', { class: 'btn primary', type: 'submit' }, 'Save'))));
+
+  const rc = [
+    ['Cloud model', settings.cloudModel],
+    ['On-device languages', settings.deviceLanguages.join(', ')],
+    ['Total check tolerance', `${Math.round(settings.sumTolerance * 100)}%`],
+    ['Cloud photos', settings.cloudPhotos ? 'Allowed with your OK' : 'Off'],
+  ];
+  const aiCard = h('section', { class: 'card set-card', id: 'set-ai' },
+    cardHead('chip', 'AI on this device', 'Gemini Nano runs inside Chrome. Photos and notes read here never leave it.'),
+    h('div', { class: 'set-status' }, h('span', null, 'Gemini Nano'), h('span', { class: `set-pill ${nanoTone}` }, nanoText)),
+    h('p', { class: 'muted small' }, 'Needs Chrome 138+ on desktop with the Prompt API; photos need multimodal input enabled.'),
+    h('div', { class: 'set-actions' },
+      h('button', { class: 'btn primary', disabled: S.nano === 'available', onclick: async (e) => {
+        e.currentTarget.disabled = true; // re-rendered below
+        prog.classList.remove('hidden');
+        const ok = await prepareDevice((ev) => { prog.value = ev.loaded ?? 0; });
+        prog.classList.add('hidden');
+        await refreshNano();
+        toast(ok ? 'Gemini Nano is ready on this device.' : 'This browser cannot run Gemini Nano. Kaye will use the cloud with your OK.', ok ? 'ok' : '');
+        render();
+      } }, icon('chip'), S.nano === 'available' ? 'Ready' : 'Get Gemini Nano')), prog,
+    h('h3', { class: 'set-sub' }, icon('cloud'), S.rc === 'remote' ? 'From Firebase Remote Config' : 'App defaults (Remote Config not loaded)'),
+    h('dl', { class: 'set-dl' }, rc.flatMap(([k, v]) => [h('dt', null, k), h('dd', null, v)])));
+
+  const notebookCard = h('section', { class: 'card set-card', id: 'set-notebook' },
+    cardHead('book', 'Notebook', 'Stored in your private Firebase account and on this device, so it works with no signal. Only you can read it.'),
+    h('div', { class: 'set-actions' },
+      h('button', { class: 'btn ghost', onclick: async () => { await store.seedSample(S.user.uid); toast('Sample notebook loaded.', 'ok'); } }, 'Load sample notebook'),
+      h('button', { class: 'btn ghost danger', onclick: async () => {
+        if (!confirm(isDemo ? 'Reset the demo notebook to the sample data?' : 'Delete every line, customer and record in this notebook? This cannot be undone.')) return;
+        await store.clearNotebook(S.user.uid);
+        if (isDemo) await store.seedSample(S.user.uid);
+        toast(isDemo ? 'Demo notebook reset.' : 'Notebook cleared.', 'ok');
+      } }, isDemo ? 'Reset demo notebook' : 'Clear my notebook')));
+
+  const privacyCard = h('section', { class: 'card set-card set-wide privacy', id: 'set-privacy' },
+    cardHead('shield', 'Privacy, in plain words'),
+    h('ul', { class: 'set-promises' },
+      h('li', null, 'Photos are read by Gemini Nano on this device. A photo goes to the cloud only after you tap “Send this photo”.'),
+      h('li', null, 'Quick notes go to the cloud only when no on-device model can read them, and customer names and phone numbers are replaced first.'),
+      h('li', null, 'The monthly record is written from totals only.'),
+      h('li', null, 'Analytics counts where the AI ran and how long it took. Never your lines, names or amounts.')));
+
+  return h('div', { class: 'settings' },
+    h('header', { class: 'vh' }, h('h1', null, 'Settings')),
+    h('div', { class: 'set-strip' },
+      tile('Account', anon ? 'Not saved' : 'Saved', anon ? 'warn' : 'ok', anon ? 'alert' : 'shield', 'set-account'),
+      tile('Gemini Nano', nanoText, nanoTone, 'chip', 'set-ai'),
+      tile('Sync', sync[1], sync[0], S.online ? (S.pending ? 'clock' : 'check') : 'nowifi', 'set-notebook'),
+      tile('Config', S.rc === 'remote' ? 'Remote' : 'Defaults', S.rc === 'remote' ? 'ok' : 'muted', 'cloud', 'set-ai')),
+    h('div', { class: 'set-grid' },
+      ...(anon ? [accountCard, businessCard, aiCard, notebookCard] : [businessCard, aiCard, accountCard, notebookCard]),
+      privacyCard));
 }
