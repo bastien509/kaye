@@ -6,6 +6,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -155,28 +163,73 @@ private fun LineRow(l: Line, onChange: () -> Unit, onRemove: () -> Unit) {
     var cust by remember(l) { mutableStateOf(l.customer ?: "") }
     var menu by remember { mutableStateOf(false) }
     val tint = when (kind) { "expense" -> c.cta; "credit" -> K.Sun; "payment" -> c.accent; else -> c.green }
-    Column(Modifier.fillMaxWidth().padding(top = 10.dp).drawBehind { drawRect(tint, size = androidx.compose.ui.geometry.Size(4.dp.toPx(), size.height)) }.padding(start = 10.dp)) {
+    val shape = RoundedCornerShape(14.dp)
+    // One compact card per line: type · item · remove / qty · price · amount / customer.
+    Column(
+        Modifier.fillMaxWidth().padding(top = 10.dp).clip(shape).background(c.paper2).border(1.dp, c.line, shape)
+            .drawBehind { drawRect(tint, size = androidx.compose.ui.geometry.Size(4.dp.toPx(), size.height)) }
+            .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Box {
-                AssistChip(onClick = { menu = true }, label = { Text(KIND_LABEL[kind] ?: kind, fontWeight = FontWeight.Bold) })
+                Row(
+                    Modifier.height(40.dp).clip(RoundedCornerShape(10.dp)).background(c.paper).border(1.dp, c.line, RoundedCornerShape(10.dp))
+                        .clickable { menu = true }.padding(horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(KIND_LABEL[kind] ?: kind, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = c.ink)
+                    Icon(Icons.Default.ArrowDropDown, "Change type", tint = c.muted, modifier = Modifier.size(20.dp))
+                }
                 DropdownMenu(menu, { menu = false }) {
                     KIND_LABEL.forEach { (k, v) -> DropdownMenuItem(text = { Text(v) }, onClick = { kind = k; l.kind = k; menu = false; onChange() }) }
                 }
             }
-            OutlinedTextField(item, { item = it; l.item = it; onChange() }, Modifier.weight(1f), singleLine = true, label = { Text("Item") })
-            IconButton(onClick = onRemove) { Icon(Icons.Default.Close, "Remove line", tint = c.muted) }
+            CompactField(item, { item = it; l.item = it; onChange() }, "Item", Modifier.weight(1f))
+            IconButton(onClick = onRemove, modifier = Modifier.size(36.dp)) { Icon(Icons.Default.Close, "Remove line", tint = c.muted, modifier = Modifier.size(20.dp)) }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            val num = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-            OutlinedTextField(qty, { qty = it; l.qty = it.toDoubleOrNull(); onChange() }, Modifier.weight(0.8f), singleLine = true, label = { Text("Qty") }, keyboardOptions = num)
-            OutlinedTextField(price, { price = it; l.unitPrice = it.toDoubleOrNull(); onChange() }, Modifier.weight(1f), singleLine = true, label = { Text("Price") }, keyboardOptions = num)
-            OutlinedTextField(amount, { amount = it; l.amount = it.toDoubleOrNull() ?: 0.0; onChange() }, Modifier.weight(1.2f), singleLine = true, label = { Text("Amount") }, keyboardOptions = num,
-                textStyle = LocalTextStyle.current.copy(fontFamily = Mono, fontWeight = FontWeight.Bold))
+        Row(Modifier.padding(end = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            CompactField(qty, { qty = it; l.qty = it.toDoubleOrNull(); onChange() }, "Qty", Modifier.weight(0.8f), number = true)
+            CompactField(price, { price = it; l.unitPrice = it.toDoubleOrNull(); onChange() }, "Price", Modifier.weight(1f), number = true)
+            CompactField(amount, { amount = it; l.amount = it.toDoubleOrNull() ?: 0.0; onChange() }, "Amount", Modifier.weight(1.2f), number = true, money = true,
+                color = if (kind == "expense") c.cta else c.ink)
         }
         if (kind == "credit" || kind == "payment") {
-            OutlinedTextField(cust, { cust = it; l.customer = it.ifBlank { null }; onChange() }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Customer") })
+            CompactField(cust, { cust = it; l.customer = it.ifBlank { null }; onChange() }, "Customer", Modifier.fillMaxWidth().padding(end = 8.dp))
         }
     }
+}
+
+/** A 40dp text field with a placeholder instead of a floating label (OutlinedTextField is 56dp+). */
+@Composable
+private fun CompactField(
+    value: String, onValue: (String) -> Unit, hint: String, modifier: Modifier = Modifier,
+    number: Boolean = false, money: Boolean = false, color: Color = kc.ink,
+) {
+    val c = kc
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(10.dp)
+    BasicTextField(
+        value, onValue, singleLine = true,
+        keyboardOptions = if (number) KeyboardOptions(keyboardType = KeyboardType.Decimal) else KeyboardOptions.Default,
+        textStyle = TextStyle(
+            color = color, fontSize = 15.sp, textAlign = if (money) TextAlign.End else TextAlign.Start,
+            fontFamily = if (money) Mono else null, fontWeight = if (money) FontWeight.Bold else FontWeight.Normal,
+        ),
+        cursorBrush = SolidColor(c.accent),
+        modifier = modifier.height(40.dp).onFocusChanged { focused = it.isFocused }
+            .semantics { contentDescription = hint },
+        decorationBox = { inner ->
+            Box(
+                Modifier.fillMaxSize().clip(shape).background(c.paper).border(if (focused) 2.dp else 1.dp, if (focused) c.accent else c.line, shape)
+                    .padding(horizontal = 10.dp),
+                contentAlignment = if (money) Alignment.CenterEnd else Alignment.CenterStart,
+            ) {
+                if (value.isEmpty()) Text(hint, color = c.muted, fontSize = 14.sp)
+                inner()
+            }
+        },
+    )
 }
 
 fun trimNum(d: Double): String = if (d % 1.0 == 0.0) d.toLong().toString() else d.toString()
