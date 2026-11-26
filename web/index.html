@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=IBM+Plex+Mono:wght@500&family=Manrope:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="assets/app.css?v=5">
-<link rel="stylesheet" href="assets/site.css?v=5">
+<link rel="stylesheet" href="assets/site.css?v=6">
 </head>
 <body class="site">
 <header class="snav">
@@ -79,14 +79,76 @@
 <section id="hybrid" class="sec alt">
   <p class="eyebrow">Hybrid inference with Firebase AI Logic</p>
   <h2>The device first. The cloud only when it should, with only what it needs.</h2>
-  <div class="routes">
-    <div class="route dev"><h3>Notebook photo</h3><p><code>ONLY_ON_DEVICE</code> with Gemini Nano. If it can't read the page or the numbers don't add up, Kaye asks before sending that one photo to the cloud.</p><span>Leaves the device: nothing, unless you say yes</span></div>
-    <div class="route dev"><h3>Quick note, English or Spanish</h3><p><code>ONLY_ON_DEVICE</code>. The note never leaves the device.</p><span>Leaves the device: nothing</span></div>
-    <div class="route cloud"><h3>Quick note, Kreyòl or French</h3><p><code>ONLY_IN_CLOUD</code> after customer names and phone numbers are replaced on the device (“C1 owes 500”). Names are put back on the device.</p><span>Leaves the device: the note, without names</span></div>
-    <div class="route cloud"><h3>Month record</h3><p><code>PREFER_ON_DEVICE</code> or <code>PREFER_IN_CLOUD</code> by language, built from <b>totals only</b>.</p><span>Leaves the device: totals, never entries</span></div>
-    <div class="route off"><h3>No signal, no model</h3><p>Offline rules in four languages understand “vann 3 diri 250 chak” instantly. Everything is saved and syncs later.</p><span>Leaves the device: nothing</span></div>
+  <p class="edge-lead">The phone is the privacy line. Five kinds of work start inside it. Only two cross it on their own, and each one carries only what it needs.</p>
+  <div class="edge">
+    <div class="edge-phone" aria-hidden="true"><span class="edge-cam"></span></div>
+    <p class="edge-label"><svg class="ic" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10.5 18.5h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Your phone · Gemini Nano + offline rules</p>
+
+    <article class="lane r1 ask">
+      <div class="task" tabindex="0">
+        <h3>Notebook photo</h3>
+        <p class="modes"><code>ONLY_ON_DEVICE</code><span class="who dev">Gemini Nano</span></p>
+        <p>If Nano can't read the page or the numbers don't add up, Kaye asks before sending that one photo to the cloud.</p>
+      </div>
+      <div class="wire" aria-hidden="true"><span class="wl">That one photo, only if you tap yes</span></div>
+      <p class="leaves"><b>Leaves the device:</b> nothing, unless you say yes</p>
+    </article>
+
+    <article class="lane r2 stay">
+      <div class="task" tabindex="0">
+        <h3>Quick note, English or Spanish</h3>
+        <p class="modes"><code>ONLY_ON_DEVICE</code><span class="who dev">Gemini Nano</span></p>
+        <p>The note is read on the phone and never leaves it.</p>
+      </div>
+      <div class="wire" aria-hidden="true"><span class="wl">Stays on the phone</span></div>
+      <p class="leaves"><b>Leaves the device:</b> nothing</p>
+    </article>
+
+    <article class="lane r3 out">
+      <div class="task" tabindex="0">
+        <h3>Quick note, Kreyòl or French</h3>
+        <p class="modes"><code>ONLY_IN_CLOUD</code><span class="who mask">Name mask on the device</span></p>
+        <p class="swap"><span>Madan Pòl owes 500</span><svg class="ic" viewBox="0 0 24 24"><path d="M5 12h13m-5-5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="masked">C1 owes 500</span></p>
+        <p>Customer names and phone numbers are replaced before the note goes out, and put back on the device.</p>
+      </div>
+      <div class="wire" aria-hidden="true"><span class="wl">The note, without names</span></div>
+      <p class="leaves"><b>Leaves the device:</b> the note, without names</p>
+    </article>
+
+    <article class="lane r4 out">
+      <div class="task" tabindex="0">
+        <h3>Month record</h3>
+        <p class="modes"><code>PREFER_ON_DEVICE</code><code>PREFER_IN_CLOUD</code></p>
+        <p>Chosen by language, and built from <b>totals only</b>.</p>
+      </div>
+      <div class="wire" aria-hidden="true"><span class="wl">Totals, never entries</span></div>
+      <p class="leaves"><b>Leaves the device:</b> totals, never entries</p>
+    </article>
+
+    <article class="lane r5 off">
+      <div class="task" tabindex="0">
+        <h3>No signal, no model</h3>
+        <p class="modes"><span class="who off">Offline rules · 4 languages</span></p>
+        <p>Understands “vann 3 diri 250 chak” instantly. Everything is saved and syncs later.</p>
+      </div>
+      <div class="wire" aria-hidden="true"><span class="wl">Saved here, syncs later</span></div>
+      <p class="leaves"><b>Leaves the device:</b> nothing</p>
+    </article>
+
+    <div class="edge-cloud">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M7 18.5h10.5a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.6 9.1 4.75 4.75 0 0 0 7 18.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      <h3>Gemini in the cloud</h3>
+      <p>Through Firebase AI Logic, protected by App Check.</p>
+      <ul>
+        <li>Kreyòl and French notes, without names</li>
+        <li>Month totals</li>
+        <li>A photo, only after you say yes</li>
+      </ul>
+      <p class="never">Never: customer names, phone numbers, single entries</p>
+    </div>
   </div>
-  <p class="muted">Every result shows where the AI ran (<code>inferenceSource</code>), how long it took and why. Routing settings live in Remote Config, so they change without a new app build.</p>
+  <div class="edge-key" aria-hidden="true"><span class="k-dev">On the device</span><span class="k-cloud">Crosses to the cloud</span><span class="k-ask">Only with your yes</span><span class="k-off">Offline</span></div>
+  <p class="muted edge-foot">Every result shows where the AI ran (<code>inferenceSource</code>), how long it took and why. Routing settings live in Remote Config, so they change without a new app build.</p>
 </section>
 
 <section class="sec">
